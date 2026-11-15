@@ -21,7 +21,8 @@ export const GET: APIRoute = async (context) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'private, max-age=300',
+        // A token's permissions can be edited at any time, so its copy is revalidated each fetch.
+        'Cache-Control': appPassword ? 'private, no-cache' : 'private, max-age=300',
         // The body depends on which token, if any, asked for it.
         Vary: 'Authorization',
       },

@@ -8,8 +8,9 @@ paths:
         Returns this specification bundled into a single OpenAPI 3.1 JSON document (all `$ref`s
         local). A session gets the whole document. An app password gets only the operations it
         may call: other operations are removed, paths left with none are dropped, and
-        `components` stay whole. Any valid app password may read it. Responses may be cached
-        privately for 5 minutes and vary by `Authorization`.
+        `components` stay whole. Any valid app password may read it. Responses vary by
+        `Authorization`. A session's copy may be cached privately for 5 minutes; an app
+        password's copy is `no-cache`, so a permission edit shows on the next fetch.
       x-required-permission: any
       security:
         - sessionAuth: []
@@ -19,6 +20,7 @@ paths:
           description: The bundled OpenAPI document
           headers:
             Cache-Control:
+              description: '`private, max-age=300` for a session, `private, no-cache` for an app password.'
               schema:
                 type: string
                 example: private, max-age=300

@@ -606,7 +606,6 @@ describe('app password authentication on the REST API', () => {
       );
       expect(response.status).toBe(200);
       expect(response.headers.get('Content-Type')).toBe('application/json');
-      expect(response.headers.get('Vary')).toBe('Authorization');
       return (await response.json()) as Spec;
     }
 
@@ -690,6 +689,23 @@ describe('app password authentication on the REST API', () => {
         rule.methods.map((method) => `${method} ${rule.path}`)
       );
       expect(operations(spec)).toEqual(allowlisted.sort());
+    });
+
+    test('an app password response is revalidated on every fetch; a session may cache it', async () => {
+      const get = (options: RequestOptions) =>
+        runChain(
+          createContext('/api/openapi.json', options),
+          (ctx) => openApiGet(ctx as never) as Promise<Response>
+        );
+
+      const token = await get({ bearer: readToken });
+      mockCookieSession();
+      const session = await get({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(token.headers.get('Cache-Control')).toBe('private, no-cache');
+      expect(session.headers.get('Cache-Control')).toBe('private, max-age=300');
+      expect(token.headers.get('Vary')).toBe('Authorization');
+      expect(session.headers.get('Vary')).toBe('Authorization');
     });
 
     test('a session user gets the whole document', async () => {
