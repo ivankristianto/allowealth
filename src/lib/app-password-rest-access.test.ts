@@ -3,8 +3,11 @@ import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { Glob } from 'bun';
 import {
+  ANY_VALID_TOKEN,
   APP_PASSWORD_REST_ROUTES,
   authorizeAppPasswordRequest,
+  missingPermission,
+  requiredPermission,
 } from '@/lib/app-password-rest-access';
 import { expandPermissionGrants } from '@/lib/permissions/registry';
 
@@ -43,6 +46,23 @@ function listFileRoutes(): FileRoute[] {
 
 const READ_PERMISSIONS = expandPermissionGrants(['*:read']);
 const ALL_PERMISSIONS = expandPermissionGrants(['*']);
+
+describe('requiredPermission and missingPermission', () => {
+  const transactions = APP_PASSWORD_REST_ROUTES.find((rule) => rule.path === '/api/transactions')!;
+
+  test('looks a method up in any case, HEAD as GET, and is undefined for an unlisted one', () => {
+    expect(requiredPermission(transactions, 'post')).toBe('transactions:create');
+    expect(requiredPermission(transactions, 'HEAD')).toBe('transactions:read');
+    expect(requiredPermission(transactions, 'DELETE')).toBeUndefined();
+    expect(requiredPermission(transactions, 'constructor')).toBeUndefined();
+  });
+
+  test('names the missing permission; the any-valid-token marker is never missing', () => {
+    expect(missingPermission(ANY_VALID_TOKEN, [])).toBeNull();
+    expect(missingPermission('transactions:read', [])).toBe('transactions:read');
+    expect(missingPermission('transactions:read', ['transactions:read'])).toBeNull();
+  });
+});
 
 describe('authorizeAppPasswordRequest', () => {
   test('a read token may GET an allowlisted route', () => {

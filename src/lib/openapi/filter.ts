@@ -1,7 +1,7 @@
 import {
-  ANY_VALID_TOKEN,
   APP_PASSWORD_REST_ROUTES,
-  type AppPasswordRestMethod,
+  missingPermission,
+  requiredPermission,
 } from '@/lib/app-password-rest-access';
 import type { Permission } from '@/lib/permissions/registry';
 
@@ -20,11 +20,8 @@ const OPERATION_KEYS: ReadonlySet<string> = new Set([
 
 function mayCall(path: string, operationKey: string, permissions: readonly Permission[]): boolean {
   const rule = APP_PASSWORD_REST_ROUTES.find((candidate) => candidate.path === path);
-  // HEAD needs what GET needs, as in authorizeAppPasswordRequest.
-  const method = operationKey === 'head' ? 'GET' : operationKey.toUpperCase();
-  if (!rule || !Object.hasOwn(rule.permissions, method)) return false;
-  const required = rule.permissions[method as AppPasswordRestMethod];
-  return required === ANY_VALID_TOKEN || (required !== undefined && permissions.includes(required));
+  const required = rule && requiredPermission(rule, operationKey);
+  return required !== undefined && missingPermission(required, permissions) === null;
 }
 
 /** A copy keeping only the operations a token with `permissions` may call; the input is not mutated. */
