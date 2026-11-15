@@ -140,7 +140,7 @@ Connected Apps lists AI assistants you authorized through OAuth, such as Claude 
 3. On the consent screen, untick any permission you don't want the assistant to have, then click **Authorize**
 4. Copy the one-time access token from the confirmation page
 
-The assistant sees and calls only the tools its permissions cover. The list shows each app's permissions. **Full access** marks an app connected before permissions existed, or one that asked for none; it can use every tool until its token expires or you revoke it. To change an app's permissions, connect it again.
+The assistant sees and calls only the tools its permissions cover, and the list shows each app's permissions. An app with **No permissions** can connect but cannot read or change anything; the consent screen warns you before you approve that. To change an app's permissions, connect it again.
 
 These tokens last 24 hours. Signing out of Allowealth disconnects them. Click **Revoke** to disconnect one sooner, or **Activity** to see what that token did.
 
