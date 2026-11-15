@@ -1,7 +1,6 @@
 /**
- * Bundles the split OpenAPI YAML (openapi.yml + openapi/**) into one document.
- * Path files are inlined; schemas, responses and parameters are hoisted into
- * `components` and referenced locally. Unresolvable refs throw.
+ * Bundles openapi.yml and openapi/** into one document, hoisting shared parts into
+ * `components` with local refs. An unresolvable ref throws.
  */
 
 import { dirname, join, normalize, basename, extname } from 'node:path/posix';

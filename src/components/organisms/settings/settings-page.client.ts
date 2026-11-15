@@ -5,6 +5,7 @@ import { setButtonLoading } from '@/lib/client-utils';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { onPageReady } from '@/lib/page-lifecycle.client';
 import { getRuntimeTimeZone } from '@/lib/utils/date';
+import { selectTimeZoneOption } from '@/lib/utils/timezone-select.client';
 
 /**
  * Offers the browser's zone while the workspace is still on the UTC default.
@@ -16,8 +17,7 @@ export function bindTimezoneSuggestion(signal?: AbortSignal): void {
   if (!select || !suggestion) return;
 
   const browserZone = getRuntimeTimeZone();
-  const hasOption = Array.from(select.options).some((option) => option.value === browserZone);
-  if (select.dataset.savedTimezone !== 'UTC' || browserZone === 'UTC' || !hasOption) return;
+  if (select.dataset.savedTimezone !== 'UTC' || browserZone === 'UTC') return;
 
   const zoneLabel = suggestion.querySelector<HTMLElement>('[data-timezone-suggestion-zone]');
   if (zoneLabel) zoneLabel.textContent = browserZone.replaceAll('_', ' ');
@@ -26,7 +26,7 @@ export function bindTimezoneSuggestion(signal?: AbortSignal): void {
   suggestion.querySelector<HTMLButtonElement>('[data-timezone-suggestion-apply]')?.addEventListener(
     'click',
     () => {
-      select.value = browserZone;
+      selectTimeZoneOption(select, browserZone);
       suggestion.classList.add('hidden');
     },
     { signal }

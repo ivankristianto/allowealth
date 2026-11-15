@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as patterns from '@/lib/validation/patterns';
 
-const SRC_DIR = join(import.meta.dir, '..', '..');
+const SRC_DIR = join(import.meta.dir, '..', '..', 'src');
 
 const compilesAsHtmlPattern = (source: string): boolean => {
   try {

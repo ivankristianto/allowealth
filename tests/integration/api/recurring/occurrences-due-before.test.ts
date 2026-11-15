@@ -20,7 +20,7 @@ function context(query: string) {
   const url = `http://localhost/api/recurring/occurrences?${query}`;
   return {
     url: new URL(url),
-    request: new Request(url),
+    request: new Request(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }),
     locals: { user: { id: USER, workspaceId: WS, role: 'admin' }, perf: undefined },
   };
 }
@@ -129,6 +129,23 @@ describe('GET /api/recurring/occurrences?due_before', () => {
     const { body } = await fetchOccurrences('status=pending&month=2026-05');
 
     expect(ids(body)).toEqual(['occ-may']);
+  });
+
+  it('does not label a due_before list with the current month', async () => {
+    const response = await GET(context('status=pending&due_before=2026-01-01&_render=html'));
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('RecurringPendingListPartial');
+    expect(html).not.toContain('monthLabel=');
+  });
+
+  it('labels the list with the month when one is given', async () => {
+    const response = await GET(
+      context('status=pending&month=2026-06&due_before=2026-06-01&_render=html')
+    );
+
+    expect(await response.text()).toContain('monthLabel="June 2026"');
   });
 
   it('rejects a date that is malformed or not on the calendar', async () => {

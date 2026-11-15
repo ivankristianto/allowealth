@@ -1,15 +1,13 @@
 import type { APIRoute } from 'astro';
-import { errorResponse } from '@/lib/api-utils';
+import { errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/logger';
 import { getOpenApiJson } from '@/lib/openapi/document';
 
-/**
- * GET /api/openapi.json
- *
- * The bundled OpenAPI document. Any signed-in caller may read it: a session or an app password.
- */
+/** GET /api/openapi.json: the bundled spec, for a signed-in session or an app password. */
 export const GET: APIRoute = async (context) => {
-  if (!context.locals.user) {
+  try {
+    getAuthenticatedUser(context);
+  } catch {
     return errorResponse('Unauthorized', 401);
   }
 

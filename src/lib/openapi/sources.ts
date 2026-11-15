@@ -1,7 +1,6 @@
 /**
- * The spec YAML inlined into the server bundle at build time; the runtime image
- * ships `dist/` only, so the files cannot be read from disk in production.
- * Keys are repo-relative paths such as `openapi/paths/recurring.yml`.
+ * The spec YAML inlined at build time, keyed by repo path (`openapi/paths/recurring.yml`).
+ * The runtime image ships only `dist/`, so production can't read the files from disk.
  */
 export function loadOpenApiSources(): Record<string, string> {
   const modules = import.meta.glob<string>(['/openapi.yml', '/openapi/**/*.yml'], {

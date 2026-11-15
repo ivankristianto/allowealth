@@ -8,15 +8,17 @@
 
 import { ArrowRight } from '@lucide/astro';
 import { CURRENCY_OPTIONS, CURRENCY_META } from '@/lib/constants/currency';
+import { getTimeZoneOptions } from '@/lib/utils/date';
 
 export interface Props {
   currentCurrency?: string;
   currentSecondaryCurrency?: string;
-  /** Saved workspace timezone; while it is the UTC default, the browser's zone is offered */
+  /** Saved workspace timezone; while it is the UTC default, the browser's zone is preselected */
   currentTimezone?: string;
 }
 
 const { currentCurrency, currentSecondaryCurrency, currentTimezone = 'UTC' } = Astro.props;
+const timezoneOptions = getTimeZoneOptions(currentTimezone);
 import Button from '@/components/atoms/Button.astro';
 ---
 
@@ -33,7 +35,6 @@ import Button from '@/components/atoms/Button.astro';
     data-saved-timezone={currentTimezone}
     novalidate
   >
-    <input type="hidden" name="timezone" value="" data-onboarding-timezone />
     <div class="form-control w-full gap-1.5">
       <label class="label px-0" for="primary-currency">
         <span class="label-text font-semibold text-base-content">Primary currency</span>
@@ -87,11 +88,30 @@ import Button from '@/components/atoms/Button.astro';
       </div>
     </div>
 
-    <p class="hidden text-sm text-base-content/70" data-onboarding-timezone-note>
-      Dates will follow this browser's timezone,
-      <span class="font-semibold" data-onboarding-timezone-zone></span>. You can change it later in
-      Settings.
-    </p>
+    <div class="form-control w-full gap-1.5">
+      <label class="label px-0" for="onboarding-timezone">
+        <span class="label-text font-semibold text-base-content">Timezone</span>
+      </label>
+      <select
+        id="onboarding-timezone"
+        name="timezone"
+        class="select select-bordered w-full rounded-lg border border-base-300"
+        aria-describedby="onboarding-timezone-help"
+        data-onboarding-timezone
+      >
+        {timezoneOptions.map((zone) => (
+          <option value={zone} selected={zone === currentTimezone}>
+            {zone.replaceAll('_', ' ')}
+          </option>
+        ))}
+      </select>
+      <p id="onboarding-timezone-help" class="text-sm text-base-content/60">
+        Decides which day counts as today for expenses and bills.{' '}
+        <span class="hidden" data-onboarding-timezone-detected>
+          Picked from this browser, so change it if it's wrong.
+        </span>
+      </p>
+    </div>
 
     <div
       id="currency-error"
@@ -115,6 +135,7 @@ import Button from '@/components/atoms/Button.astro';
 <script>
   import { csrfFetch } from '@/lib/csrf-client';
   import { getRuntimeTimeZone } from '@/lib/utils/date';
+  import { selectTimeZoneOption } from '@/lib/utils/timezone-select.client';
 
   function initStepCurrency() {
     const form = document.getElementById('onboarding-currency-form') as HTMLFormElement | null;
@@ -126,14 +147,11 @@ import Button from '@/components/atoms/Button.astro';
 
     if (!form || !toggle || !container) return;
 
-    const timezoneInput = form.querySelector<HTMLInputElement>('[data-onboarding-timezone]');
+    const timezoneSelect = form.querySelector<HTMLSelectElement>('[data-onboarding-timezone]');
     const browserZone = getRuntimeTimeZone();
-    if (timezoneInput && form.dataset.savedTimezone === 'UTC' && browserZone !== 'UTC') {
-      timezoneInput.value = browserZone;
-      const note = form.querySelector<HTMLElement>('[data-onboarding-timezone-note]');
-      const zoneLabel = form.querySelector<HTMLElement>('[data-onboarding-timezone-zone]');
-      if (zoneLabel) zoneLabel.textContent = browserZone.replaceAll('_', ' ');
-      note?.classList.remove('hidden');
+    if (timezoneSelect && form.dataset.savedTimezone === 'UTC' && browserZone !== 'UTC') {
+      selectTimeZoneOption(timezoneSelect, browserZone);
+      form.querySelector('[data-onboarding-timezone-detected]')?.classList.remove('hidden');
     }
 
     toggle.addEventListener('change', () => {
@@ -154,7 +172,9 @@ import Button from '@/components/atoms/Button.astro';
       const formData = new FormData(form);
       const currency = formData.get('currency') as string;
       const secondaryCurrency = toggle.checked ? (formData.get('secondaryCurrency') as string) : '';
-      const timezone = (formData.get('timezone') as string | null) || undefined;
+      const timezone = formData.get('timezone') as string | null;
+      const changedTimezone =
+        timezone && timezone !== form.dataset.savedTimezone ? timezone : undefined;
 
       const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
       btn.disabled = true;
@@ -164,21 +184,16 @@ import Button from '@/components/atoms/Button.astro';
         const res = await csrfFetch('/api/workspace/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currency, secondaryCurrency: secondaryCurrency || null }),
+          body: JSON.stringify({
+            currency,
+            secondaryCurrency: secondaryCurrency || null,
+            timezone: changedTimezone,
+          }),
         });
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error?.message || 'Failed to save currency');
-        }
-
-        // Best effort: a zone the server doesn't know must not block onboarding
-        if (timezone) {
-          await csrfFetch('/api/workspace/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ timezone }),
-          }).catch(() => undefined);
+          throw new Error(data.error?.message || 'Failed to save currency and timezone');
         }
 
         // Navigate to next step (page reload picks up new state)
