@@ -59,8 +59,9 @@ Unauthorized:
 Forbidden:
   description: >-
     Forbidden. With an app password: `APP_PASSWORD_ROUTE_NOT_ALLOWED` when the method and path
-    are not on the app password allowlist, `APP_PASSWORD_SCOPE_INSUFFICIENT` when a `read` token
-    sends anything other than GET or HEAD. `WORKSPACE_INACTIVE` when the workspace is archived.
+    are not on the app password allowlist, `APP_PASSWORD_PERMISSION_MISSING` when the token lacks
+    the permission the route needs (named in `error.details.permission`). `WORKSPACE_INACTIVE`
+    when the workspace is archived.
     With a session cookie: `CSRF_VALIDATION_FAILED` when a POST, PUT, PATCH or DELETE lacks a
     matching `X-CSRF-Token` header. Any route: `_render=html` without the
     `X-Requested-With: XMLHttpRequest` header returns 403 with a message and no code. Some
@@ -77,13 +78,15 @@ Forbidden:
             error:
               message: App passwords cannot use DELETE /api/accounts/abc123
               code: APP_PASSWORD_ROUTE_NOT_ALLOWED
-        scopeInsufficient:
-          summary: Read-only app password used for a write
+        permissionMissing:
+          summary: App password without the permission the route needs
           value:
             success: false
             error:
-              message: This app password is read-only. Create a read-write app password to make changes.
-              code: APP_PASSWORD_SCOPE_INSUFFICIENT
+              message: This app password does not have the transactions:create permission
+              code: APP_PASSWORD_PERMISSION_MISSING
+              details:
+                permission: transactions:create
 
 UnsupportedMediaType:
   description: 'The request body was not sent with `Content-Type: application/json` (`UNSUPPORTED_MEDIA_TYPE`).'
