@@ -3,6 +3,7 @@ import Label from '@/components/atoms/Label.astro';
 import Button from '@/components/atoms/Button.astro';
 import { BuildingComplex, Info, Save } from '@lucide/astro';
 import { CURRENCY_META, CURRENCY_OPTIONS } from '@/lib/constants/currency';
+import { getTimeZoneOptions } from '@/lib/utils/date';
 import { groupedSectionClass, sectionEyebrowClass, sectionTitleClass } from './settings-classes';
 
 export interface Props {
@@ -24,10 +25,7 @@ const weekStartOptions = [
   { value: 'sunday', label: 'Sunday' },
 ];
 
-const supportedTimezones = Intl.supportedValuesOf('timeZone');
-const timezoneOptions = supportedTimezones.includes(settings.timezone)
-  ? supportedTimezones
-  : [settings.timezone, ...supportedTimezones];
+const timezoneOptions = getTimeZoneOptions(settings.timezone);
 ---
 
 <section

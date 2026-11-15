@@ -281,6 +281,12 @@ export function normalizeTimeZone(value: unknown): string | null {
   }
 }
 
+/** Zones for a timezone select: the runtime's list, plus `saved` when the list lacks it. */
+export function getTimeZoneOptions(saved: string): string[] {
+  const zones = Intl.supportedValuesOf('timeZone');
+  return zones.includes(saved) ? zones : [saved, ...zones];
+}
+
 /** The zone this runtime runs in: the browser's on the client, the process's on the server. */
 export function getRuntimeTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
