@@ -9,10 +9,14 @@ import {
   getAppPasswordHint,
   isAppPasswordToken,
   type AppPasswordExpiryOption,
-  type AppPasswordScope,
 } from '@/lib/mcp-app-password';
 import type { McpAuthContext } from '@/lib/mcp-auth';
-import { SCOPE_PERMISSION_GRANTS, expandPermissionGrants } from '@/lib/permissions/registry';
+import {
+  deriveAppPasswordPreset,
+  expandPermissionGrants,
+  type AppPasswordPreset,
+  type PermissionGrant,
+} from '@/lib/permissions/registry';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_USED_WRITE_INTERVAL_MS = 60_000;
@@ -33,7 +37,9 @@ export interface AppPasswordSummary {
   id: string;
   name: string;
   tokenHint: string;
-  scope: AppPasswordScope;
+  /** Stored grants, wildcards included. */
+  permissions: PermissionGrant[];
+  preset: AppPasswordPreset;
   createdAt: Date;
   lastUsedAt: Date | null;
   expiresAt: Date | null;
@@ -43,8 +49,13 @@ export interface AppPasswordSummary {
 export interface CreateAppPasswordInput {
   userId: string;
   name: string;
-  scope: AppPasswordScope;
+  permissions: PermissionGrant[];
   expiry: AppPasswordExpiryOption;
+}
+
+export interface UpdateAppPasswordInput {
+  name?: string;
+  permissions?: PermissionGrant[];
 }
 
 export type AppPasswordErrorCode = 'LIMIT_REACHED' | 'NO_WORKSPACE';
@@ -104,8 +115,7 @@ export class McpAppPasswordService {
       name: input.name,
       token_hash: await hashOAuthToken(token),
       token_hint: getAppPasswordHint(token),
-      scope: input.scope,
-      permissions: [...SCOPE_PERMISSION_GRANTS[input.scope]],
+      permissions: input.permissions,
       expires_at: days === null ? null : new Date(createdAt.getTime() + days * DAY_MS),
       last_used_at: null,
       created_at: createdAt,
@@ -127,6 +137,40 @@ export class McpAppPasswordService {
       .orderBy(desc(mcpAppPasswords.created_at));
 
     return rows.map((row) => this.toSummary(row));
+  }
+
+  /** Returns null when the token does not exist or belongs to someone else. */
+  async findForUser(userId: string, id: string): Promise<AppPasswordSummary | null> {
+    const { mcpAppPasswords } = this.schema;
+    const [row] = await this.database
+      .select()
+      .from(mcpAppPasswords)
+      .where(and(eq(mcpAppPasswords.id, id), eq(mcpAppPasswords.user_id, userId)))
+      .limit(1);
+
+    return row ? this.toSummary(row) : null;
+  }
+
+  /** Returns the token before and after, or null when it does not exist or belongs to someone else. */
+  async update(
+    userId: string,
+    id: string,
+    changes: UpdateAppPasswordInput
+  ): Promise<{ before: AppPasswordSummary; after: AppPasswordSummary } | null> {
+    const { mcpAppPasswords } = this.schema;
+    const before = await this.findForUser(userId, id);
+    if (!before) return null;
+
+    const [row] = await this.database
+      .update(mcpAppPasswords)
+      .set({
+        ...(changes.name !== undefined && { name: changes.name }),
+        ...(changes.permissions !== undefined && { permissions: changes.permissions }),
+      })
+      .where(and(eq(mcpAppPasswords.id, id), eq(mcpAppPasswords.user_id, userId)))
+      .returning();
+
+    return row ? { before, after: this.toSummary(row) } : null;
   }
 
   /** Deletes the row; returns null when it does not exist or belongs to someone else. */
@@ -151,7 +195,6 @@ export class McpAppPasswordService {
           id: mcpAppPasswords.id,
           userId: mcpAppPasswords.user_id,
           workspaceId: mcpAppPasswords.workspace_id,
-          scope: mcpAppPasswords.scope,
           permissions: mcpAppPasswords.permissions,
           expiresAt: mcpAppPasswords.expires_at,
           lastUsedAt: mcpAppPasswords.last_used_at,
@@ -186,7 +229,6 @@ export class McpAppPasswordService {
       workspaceId: record.workspaceId,
       userId: record.userId,
       tokenId: record.id,
-      scope: record.scope,
       permissions: expandPermissionGrants(record.permissions),
     };
   }
@@ -195,7 +237,7 @@ export class McpAppPasswordService {
     id: string;
     name: string;
     token_hint: string;
-    scope: AppPasswordScope;
+    permissions: PermissionGrant[];
     created_at: Date;
     last_used_at: Date | null;
     expires_at: Date | null;
@@ -204,7 +246,8 @@ export class McpAppPasswordService {
       id: row.id,
       name: row.name,
       tokenHint: row.token_hint,
-      scope: row.scope,
+      permissions: row.permissions,
+      preset: deriveAppPasswordPreset(row.permissions),
       createdAt: row.created_at,
       lastUsedAt: row.last_used_at,
       expiresAt: row.expires_at,

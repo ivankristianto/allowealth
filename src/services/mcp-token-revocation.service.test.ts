@@ -126,7 +126,7 @@ describe('mcp-token-revocation.service', () => {
     const { token } = await appPasswords.create({
       userId: 'user-pat',
       name: 'Nightly sync',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: 'never',
     });
     expect(await appPasswords.verify(token)).not.toBeNull();
@@ -149,7 +149,7 @@ describe('mcp-token-revocation.service', () => {
     const { token } = await new McpAppPasswordService(db).create({
       userId: 'user-pat-rb',
       name: 'CI',
-      scope: 'read-write',
+      permissions: ['*'],
       expiry: '30',
     });
     raw.run(

@@ -1,0 +1,1 @@
+ALTER TABLE `mcp_app_passwords` DROP COLUMN `scope`;

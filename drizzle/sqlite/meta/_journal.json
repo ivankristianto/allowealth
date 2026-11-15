@@ -71,6 +71,13 @@
       "when": 1794707265733,
       "tag": "0009_app_password_permissions_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794709929426,
+      "tag": "0010_drop_app_password_scope",
+      "breakpoints": true
     }
   ]
 }

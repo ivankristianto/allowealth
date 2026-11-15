@@ -16,7 +16,10 @@ export const DEFAULT_APP_PASSWORD_EXPIRY: AppPasswordExpiryOption = '90';
 export const APP_PASSWORD_NAME_MAX_LENGTH = 64;
 export const MAX_APP_PASSWORDS_PER_USER = 5;
 
-/** Creating a token needs a session signed in within this window. */
+/** Applies separately to creating and to editing tokens, per user. */
+export const APP_PASSWORD_WRITE_RATE_LIMIT = { maxRequests: 10, windowMs: 15 * 60 * 1000 };
+
+/** Creating or editing a token needs a session signed in within this window. */
 export const APP_PASSWORD_REAUTH_WINDOW_MS = 15 * 60 * 1000;
 
 const TOKEN_HINT_SECRET_CHARS = 4;

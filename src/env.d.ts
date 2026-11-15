@@ -1,7 +1,6 @@
 /// <reference types="astro/client" />
 
 import type { AuthSession, AuthUser } from '@/lib/auth/types';
-import type { AppPasswordScope } from '@/lib/mcp-app-password';
 import type { Permission } from '@/lib/permissions/registry';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import type { PerfCollector } from '@/lib/perf';
@@ -16,7 +15,6 @@ declare global {
       /** Set when the request authenticated with a Bearer app password; `session` is then null. */
       appPassword?: {
         tokenId: string;
-        scope: AppPasswordScope;
         /** Expanded grants, for routes that report what the token may do. */
         permissions: readonly Permission[];
       } | null;

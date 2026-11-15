@@ -119,13 +119,14 @@ describe('POST /api/user/app-passwords', () => {
   it('creates a token, returns it once with no-store, and audit-logs it', async () => {
     const response = await createAppPassword('read');
     const body = (await response.json()) as {
-      data: { token: string; appPassword: { id: string; scope: string } };
+      data: { token: string; appPassword: { id: string; permissions: string[]; preset: string } };
     };
 
     expect(response.status).toBe(201);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(body.data.token).toStartWith('aw_pat_');
-    expect(body.data.appPassword.scope).toBe('read');
+    expect(body.data.appPassword).toMatchObject({ permissions: ['*:read'], preset: 'read' });
+    expect(body.data.appPassword).not.toHaveProperty('scope');
 
     const audit = db
       .select()
@@ -228,7 +229,9 @@ describe('stdio MCP server auth with app passwords', () => {
     const { authenticate, getAuthContext } = await import('@mcp-server/auth');
 
     const auth = await authenticate();
-    expect(auth).toMatchObject({ userId, workspaceId, tokenId: id, scope: 'read' });
+    expect(auth).toMatchObject({ userId, workspaceId, tokenId: id });
+    expect(auth.permissions).toContain('accounts:read');
+    expect(auth.permissions).not.toContain('transactions:create');
     expect(await getAuthContext()).toMatchObject({ tokenId: id });
 
     expect((await revokeToken(id)).status).toBe(200);
