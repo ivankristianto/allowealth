@@ -1,5 +1,7 @@
+import type { AppPasswordLimits } from '@/lib/app-password-limits';
+
 interface LimitsBody {
-  limits: { category_ids?: string[]; own_transactions_only?: true };
+  limits: AppPasswordLimits;
 }
 
 /** The limits part of a create or edit body. Always sent, so unticking a limit clears it. */

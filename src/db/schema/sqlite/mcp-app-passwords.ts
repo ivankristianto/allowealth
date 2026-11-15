@@ -23,7 +23,7 @@ export const mcpAppPasswords = sqliteTable(
       .$type<PermissionGrant[]>()
       .notNull()
       .default([]),
-    // Optional write limits; `{}` means none.
+    // JSON, so a new kind of limit needs no migration; `{}` keeps existing tokens unlimited.
     limits: text('limits', { mode: 'json' }).$type<AppPasswordLimits>().notNull().default({}),
     expires_at: integer('expires_at', { mode: 'timestamp' }),
     last_used_at: integer('last_used_at', { mode: 'timestamp' }),

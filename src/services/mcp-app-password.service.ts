@@ -61,41 +61,28 @@ export interface UpdateAppPasswordInput {
 
 export type AppPasswordErrorCode = 'LIMIT_REACHED' | 'NO_WORKSPACE' | 'UNKNOWN_CATEGORY';
 
+const APP_PASSWORD_ERROR_STATUS: Readonly<Record<AppPasswordErrorCode, number>> = {
+  LIMIT_REACHED: 409,
+  NO_WORKSPACE: 400,
+  UNKNOWN_CATEGORY: 400,
+};
+
 export class AppPasswordError extends Error {
+  readonly status: number;
+
   constructor(
     message: string,
     readonly code: AppPasswordErrorCode
   ) {
     super(message);
     this.name = 'AppPasswordError';
+    this.status = APP_PASSWORD_ERROR_STATUS[code];
   }
 }
 
 export class McpAppPasswordService {
   private get schema() {
     return getActiveSchema();
-  }
-
-  /** Synchronous so update can run it inside its transaction. */
-  private assertWorkspaceCategories(
-    executor: Pick<Database, 'select'>,
-    workspaceId: string,
-    limits: AppPasswordLimits | undefined
-  ): void {
-    const ids = limits?.category_ids;
-    if (!ids) return;
-    const { categories } = this.schema;
-    const found = executor
-      .select({ id: categories.id })
-      .from(categories)
-      .where(and(eq(categories.workspace_id, workspaceId), inArray(categories.id, ids)))
-      .all();
-    if (found.length !== new Set(ids).size) {
-      throw new AppPasswordError(
-        'Limits name a category that is not in this workspace',
-        'UNKNOWN_CATEGORY'
-      );
-    }
   }
 
   constructor(
@@ -269,6 +256,28 @@ export class McpAppPasswordService {
       permissions: expandPermissionGrants(record.permissions),
       limits: record.limits,
     };
+  }
+
+  /** Synchronous so update can run it inside its transaction. */
+  private assertWorkspaceCategories(
+    executor: Pick<Database, 'select'>,
+    workspaceId: string,
+    limits: AppPasswordLimits | undefined
+  ): void {
+    const ids = limits?.category_ids;
+    if (!ids) return;
+    const { categories } = this.schema;
+    const found = executor
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.workspace_id, workspaceId), inArray(categories.id, ids)))
+      .all();
+    if (found.length !== new Set(ids).size) {
+      throw new AppPasswordError(
+        'Limits name a category that is not in this workspace',
+        'UNKNOWN_CATEGORY'
+      );
+    }
   }
 
   private toSummary(row: {

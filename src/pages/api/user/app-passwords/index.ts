@@ -89,7 +89,7 @@ export const POST: APIRoute = async (context) => {
     return response;
   } catch (error) {
     if (error instanceof AppPasswordError) {
-      return errorResponse(error.message, error.code === 'LIMIT_REACHED' ? 409 : 400, error.code);
+      return errorResponse(error.message, error.status, error.code);
     }
     logError('Failed to create app password', error);
     return errorResponse(

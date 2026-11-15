@@ -97,7 +97,7 @@ export const PATCH: APIRoute = async (context) => {
     return successResponse({ appPassword: after });
   } catch (error) {
     if (error instanceof AppPasswordError) {
-      return errorResponse(error.message, 400, error.code);
+      return errorResponse(error.message, error.status, error.code);
     }
     const errorId = logError('Failed to update app password', error);
     return errorResponse('Failed to update app password', 500, 'INTERNAL_ERROR', { errorId });
