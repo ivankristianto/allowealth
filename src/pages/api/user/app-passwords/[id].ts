@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { errorResponse, isValidationError, successResponse, validateBody } from '@/lib/api-utils';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import { isDemoMode } from '@/lib/demo-mode';
 import { logError } from '@/lib/logger';
 import { APP_PASSWORD_WRITE_RATE_LIMIT, isRecentSignIn } from '@/lib/mcp-app-password';
@@ -8,6 +14,7 @@ import { checkRateLimitByKey, createRateLimitResponse } from '@/lib/rate-limit';
 import { updateAppPasswordSchema } from '@/lib/validation/app-passwords';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
+import SecurityAppPasswordEditPartial from '@/components/partials/SecurityAppPasswordEditPartial.astro';
 
 function notFound(): Response {
   return errorResponse('App password not found', 404, 'NOT_FOUND');
@@ -15,9 +22,14 @@ function notFound(): Response {
 
 /**
  * GET /api/user/app-passwords/:id
- * Returns one of the current user's app passwords.
+ * Returns one of the current user's app passwords. ?_render=html returns its edit form.
  */
 export const GET: APIRoute = async (context) => {
+  const render = createRenderHelper(context.url, context.request);
+  if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
+
   const user = context.locals.user;
   if (!user?.id) return errorResponse('Unauthorized', 401);
 
@@ -27,6 +39,19 @@ export const GET: APIRoute = async (context) => {
   try {
     const appPassword = await mcpAppPasswordService.findForUser(user.id, id);
     if (!appPassword) return notFound();
+
+    if (render.wantsHtml()) {
+      const session = context.locals.session;
+      const container = await AstroContainer.create();
+      const html = await container.renderToString(SecurityAppPasswordEditPartial, {
+        props: {
+          appPassword,
+          recentSignIn: Boolean(session && isRecentSignIn(session.createdAt)),
+        },
+      });
+      return render.html(html);
+    }
+
     return successResponse({ appPassword });
   } catch (error) {
     const errorId = logError('Failed to load app password', error);

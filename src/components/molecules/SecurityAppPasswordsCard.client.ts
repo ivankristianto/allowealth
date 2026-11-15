@@ -3,6 +3,7 @@ import { csrfFetch } from '@/lib/csrf-client';
 import { setButtonLoading } from '@/lib/client-utils';
 import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
 import { onPageReady } from '@/lib/page-lifecycle.client';
+import { readAccessFields, syncCustomPermissions } from './AppPasswordAccessFields.client';
 
 const ENDPOINT = '/api/user/app-passwords';
 
@@ -43,10 +44,23 @@ function initAppPasswordsCard(signal: AbortSignal): void {
   const revealValue = card.querySelector<HTMLInputElement>('[data-app-password-value]');
   const createModal = card.querySelector<HTMLDialogElement>('[data-create-app-password-modal]');
   const createForm = card.querySelector<HTMLFormElement>('[data-create-app-password-form]');
+  const editModal = card.querySelector<HTMLDialogElement>('[data-edit-app-password-modal]');
+  const editBody = card.querySelector<HTMLElement>('[data-edit-app-password-body]');
   const revokeModal = card.querySelector<HTMLDialogElement>('[data-revoke-app-password-modal]');
   const revokeLabel = card.querySelector<HTMLElement>('[data-revoke-app-password-label]');
   const confirmRevoke = card.querySelector<HTMLButtonElement>('[data-confirm-revoke-app-password]');
-  if (!list || !reveal || !revealValue || !createModal || !revokeModal || !confirmRevoke) return;
+  if (
+    !list ||
+    !reveal ||
+    !revealValue ||
+    !createModal ||
+    !editModal ||
+    !editBody ||
+    !revokeModal ||
+    !confirmRevoke
+  ) {
+    return;
+  }
 
   let pendingRevokeId: string | null = null;
 
@@ -62,14 +76,41 @@ function initAppPasswordsCard(signal: AbortSignal): void {
       const target = event.target as HTMLElement;
 
       if (target.closest('[data-open-create-app-password]')) {
-        createForm?.reset();
+        if (createForm) {
+          createForm.reset();
+          syncCustomPermissions(createForm);
+        }
         createModal.showModal();
         createForm?.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
         return;
       }
 
-      if (target.closest('[data-close-create-app-password]')) {
-        createModal.close();
+      if (target.closest('[data-close-app-password-dialog]')) {
+        target.closest('dialog')?.close();
+        return;
+      }
+
+      const editButton = target.closest<HTMLButtonElement>('[data-edit-app-password]');
+      if (editButton) {
+        const id = editButton.dataset.appPasswordId;
+        if (!id) return;
+        setButtonLoading(editButton, true);
+        try {
+          const response = await csrfFetch(`${ENDPOINT}/${encodeURIComponent(id)}?_render=html`, {
+            credentials: 'include',
+          });
+          if (!response.ok) {
+            const body = await readJson<ApiErrorBody>(response);
+            throw new Error(getApiErrorMessage(body, 'Failed to open app password'));
+          }
+          replaceWithSanitizedHtml(editBody, await response.text());
+          editModal.showModal();
+          editBody.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
+        } catch (error) {
+          addToast(error instanceof Error ? error.message : 'Failed to open app password', 'error');
+        } finally {
+          setButtonLoading(editButton, false);
+        }
         return;
       }
 
@@ -123,8 +164,8 @@ function initAppPasswordsCard(signal: AbortSignal): void {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: formData.get('name'),
-            scope: formData.get('scope'),
             expiry: formData.get('expiry'),
+            ...readAccessFields(formData),
           }),
         });
         const body = await readJson<
@@ -145,6 +186,57 @@ function initAppPasswordsCard(signal: AbortSignal): void {
         await refreshList(list);
       } catch (error) {
         addToast(error instanceof Error ? error.message : 'Failed to create app password', 'error');
+      } finally {
+        setButtonLoading(submitButton, false);
+      }
+    },
+    { signal }
+  );
+
+  card.addEventListener(
+    'change',
+    (event) => {
+      const target = event.target as HTMLElement;
+      if (!target.matches('[data-app-password-preset]')) return;
+      const form = target.closest('form');
+      if (form) syncCustomPermissions(form);
+    },
+    { signal }
+  );
+
+  // The edit form is injected after load, so its submit is delegated.
+  card.addEventListener(
+    'submit',
+    async (event) => {
+      const form = (event.target as HTMLElement).closest<HTMLFormElement>(
+        '[data-edit-app-password-form]'
+      );
+      if (!form) return;
+      event.preventDefault();
+
+      const id = form.dataset.appPasswordId;
+      if (!id) return;
+      const submitButton = form.querySelector<HTMLButtonElement>('[data-submit-edit-app-password]');
+      const formData = new FormData(form);
+      setButtonLoading(submitButton, true);
+
+      try {
+        const response = await csrfFetch(`${ENDPOINT}/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: formData.get('name'), ...readAccessFields(formData) }),
+        });
+        if (!response.ok) {
+          const body = await readJson<ApiErrorBody>(response);
+          throw new Error(getApiErrorMessage(body, 'Failed to update app password'));
+        }
+
+        editModal.close();
+        addToast('App password updated', 'success');
+        await refreshList(list);
+      } catch (error) {
+        addToast(error instanceof Error ? error.message : 'Failed to update app password', 'error');
       } finally {
         setButtonLoading(submitButton, false);
       }
