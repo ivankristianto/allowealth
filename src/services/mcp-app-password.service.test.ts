@@ -172,6 +172,7 @@ describe('McpAppPasswordService.verify', () => {
       workspaceId,
       userId,
       tokenId: appPassword.id,
+      tokenName: 'Agent',
       permissions: READ_PERMISSIONS,
       kind: 'app_password',
     });

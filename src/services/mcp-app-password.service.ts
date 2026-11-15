@@ -195,6 +195,7 @@ export class McpAppPasswordService {
       this.database
         .select({
           id: mcpAppPasswords.id,
+          name: mcpAppPasswords.name,
           userId: mcpAppPasswords.user_id,
           workspaceId: mcpAppPasswords.workspace_id,
           permissions: mcpAppPasswords.permissions,
@@ -232,6 +233,7 @@ export class McpAppPasswordService {
       workspaceId: record.workspaceId,
       userId: record.userId,
       tokenId: record.id,
+      tokenName: record.name,
       permissions: expandPermissionGrants(record.permissions),
     };
   }

@@ -172,12 +172,13 @@ describe('validateMcpToken', () => {
   it('accepts an mcp token from every seeded MCP client', async () => {
     mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
 
-    for (const { clientId } of MCP_OAUTH_CLIENTS) {
+    for (const { clientId, name } of MCP_OAUTH_CLIENTS) {
       mockDb.query.oauthAccessToken.findFirst = mock(async () => liveToken({ clientId }));
       expect(await validateMcpToken('valid-token', testDeps)).toEqual({
         workspaceId: 'ws-1',
         userId: 'user-1',
         tokenId: 'tok-1',
+        tokenName: name,
         permissions: PERMISSION_IDS,
         kind: 'oauth',
       });
@@ -203,6 +204,7 @@ describe('validateMcpToken', () => {
       workspaceId: 'ws-1',
       userId: 'user-1',
       tokenId: 'tok-1',
+      tokenName: 'Claude Desktop',
       permissions: PERMISSION_IDS,
       kind: 'oauth',
     });
@@ -228,6 +230,7 @@ describe('validateMcpToken', () => {
       workspaceId: 'ws-1',
       userId: 'user-1',
       tokenId: 'tok-1',
+      tokenName: 'Claude Desktop',
       permissions: PERMISSION_IDS,
       kind: 'oauth',
     });
@@ -301,6 +304,7 @@ describe('validateMcpToken app password dispatch', () => {
     workspaceId: 'ws-1',
     userId: 'user-1',
     tokenId: 'pat_1',
+    tokenName: 'Nightly import',
     permissions: ['accounts:read' as const],
     kind: 'app_password' as const,
   };
@@ -350,6 +354,7 @@ describe('validateMcpToken app password dispatch', () => {
       workspaceId: 'ws-1',
       userId: 'user-1',
       tokenId: 'tok-1',
+      tokenName: 'Claude Desktop',
       permissions: PERMISSION_IDS,
       kind: 'oauth',
     });
@@ -361,6 +366,7 @@ describe('validateMcpToken with an archived workspace', () => {
     workspaceId: 'ws-archived',
     userId: 'user-1',
     tokenId: 'pat-1',
+    tokenName: 'Nightly import',
     permissions: ['accounts:read' as const],
     kind: 'app_password' as const,
   };
