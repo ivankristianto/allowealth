@@ -19,8 +19,12 @@ paths:
         missing permissions. Read-only app passwords therefore get the read tools
         (`list_categories`, `list_accounts`, `list_transactions`,
         `get_budget_summary`, `get_dashboard`, `get_account_summary`) and not
-        `add_expense` or `add_income`. OAuth tokens may call every tool. Each tool
-        sets `annotations.readOnlyHint` when it only reads.
+        `add_expense` or `add_income`. OAuth tokens may call every tool.
+
+        Read tools set `annotations.readOnlyHint: true`. Write tools set
+        `readOnlyHint: false` and `destructiveHint`: `false` when the tool only
+        creates or confirms records (`add_expense`, `add_income`), `true` when it
+        can update or delete.
 
         Rate limited to 60 requests per minute per token. Bodies over 64 KB get 413.
       security:

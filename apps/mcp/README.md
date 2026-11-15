@@ -164,7 +164,7 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 
 Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold every permission. A tool without an entry is refused to every token, and a test fails until it has one. The stdio and HTTP servers apply the same check.
 
-Tools advertise `readOnlyHint` when all their permissions are reads and `destructiveHint` when any is a delete, so clients can warn before a write.
+Read tools advertise `readOnlyHint: true`. Write tools advertise `readOnlyHint: false` and `destructiveHint`, which is `false` for tools that only create or confirm records (`add_expense`, `add_income`) and `true` for tools that can update or delete, so clients can warn before a write.
 
 ## Usage Examples
 
