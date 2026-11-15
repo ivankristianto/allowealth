@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type { AppPasswordLimits } from '@/lib/app-password-limits';
 import type { PermissionGrant } from '@/lib/permissions/registry';
 import { users } from './users';
 import { workspaces } from './workspaces';
@@ -22,6 +23,8 @@ export const mcpAppPasswords = sqliteTable(
       .$type<PermissionGrant[]>()
       .notNull()
       .default([]),
+    // Optional write limits; `{}` means none.
+    limits: text('limits', { mode: 'json' }).$type<AppPasswordLimits>().notNull().default({}),
     expires_at: integer('expires_at', { mode: 'timestamp' }),
     last_used_at: integer('last_used_at', { mode: 'timestamp' }),
     created_at: integer('created_at', { mode: 'timestamp' })
