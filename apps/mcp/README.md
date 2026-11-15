@@ -51,7 +51,7 @@ bun run aw db seed-oauth-clients
 2. Start Allowealth and sign in.
 3. Open **Security → Connected Apps**.
 4. Click **Connect** for your client.
-5. Approve the OAuth consent screen.
+5. On the OAuth consent screen, untick any permission the client should not have, then approve.
 6. Copy the one-time access token shown on `/oauth/display-token`.
 
 Use that token as `ALLOWEALTH_ACCESS_TOKEN` for stdio clients or as the Bearer token for HTTP clients.
@@ -163,7 +163,7 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 | `get_account_summary` | Read   | Get account totals grouped by currency and type                              |
 | `get_token_info`      | Read   | Describe the token in use: name, preset, permissions, expiry and rate limit  |
 
-Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold every permission. A tool without an entry is refused to every token, and a test fails until it has one. `get_token_info` is mapped to `ANY_VALID_TOKEN` instead, so every token may call it. Over stdio its `rate_limit` is `null`, because the local server applies none. The stdio and HTTP servers apply the same check.
+Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold the permissions granted on the consent screen (see Security below). A tool without an entry is refused to every token, and a test fails until it has one. `get_token_info` is mapped to `ANY_VALID_TOKEN` instead, so every token may call it. Over stdio its `rate_limit` is `null`, because the local server applies none. The stdio and HTTP servers apply the same check.
 
 Read tools advertise `readOnlyHint: true`. Write tools advertise `readOnlyHint: false` and `destructiveHint`, which is `false` for tools that only create or confirm records (`add_expense`, `add_income`) and `true` for tools that can update or delete, so clients can warn before a write.
 
@@ -185,6 +185,7 @@ The AI will call the appropriate tools automatically. Category and asset names a
 - OAuth 2.1 is provided by `@better-auth/oauth-provider` (Better Auth 1.7)
 - Clients, tokens and consents are stored in `oauthClient`, `oauthAccessToken`, `oauthRefreshToken` and `oauthConsent`; token values are stored hashed
 - Signing out of Allowealth revokes the OAuth tokens issued under that browser session
+- Each registry permission is an OAuth scope, `allowealth:<permission>` (for example `allowealth:transactions:create`), listed in `scopes_supported` at `/api/auth/.well-known/oauth-authorization-server`. A client requests the ones it needs alongside `openid mcp`; the user can untick any of them on the consent screen. A token holds exactly its `allowealth:*` scopes: with none it can connect and call `get_token_info`, nothing else. Approving a client again revokes its earlier tokens
 - App passwords live in `mcp_app_passwords`, stored as a SHA-256 hash with a non-secret `aw_pat_xxxx` hint. The `aw_pat_` prefix lets secret scanners spot leaked tokens
 - Both token types are shown once
 - Every HTTP request and every stdio tool call re-checks the token against the database, so revocation, expiry and account deletion take effect on the next call

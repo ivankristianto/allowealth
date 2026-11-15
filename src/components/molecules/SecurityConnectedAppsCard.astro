@@ -1,15 +1,8 @@
 ---
 import Button from '@/components/atoms/Button.astro';
-import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import { MCP_CONNECT_SCOPES, MCP_OAUTH_CLIENTS, type ConnectedApp } from '@/lib/mcp-oauth';
+import { tokenClasses } from '@/lib/tokens';
 import { tokenActivityHref } from '@/lib/token-activity-filter';
-
-interface ConnectedApp {
-  tokenId: string;
-  clientName: string;
-  clientId: string;
-  createdAt: Date;
-  accessTokenExpiresAt: Date;
-}
 
 interface Props {
   apps: ConnectedApp[];
@@ -23,7 +16,9 @@ function getAuthorizeUrl(clientId: string): string {
     client_id: clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
-    scope: 'openid mcp',
+    scope: MCP_CONNECT_SCOPES.join(' '),
+    // Always show the consent page, so connecting again is how the user changes permissions.
+    prompt: 'consent',
     state: clientId,
   });
 
@@ -40,6 +35,10 @@ function getAuthorizeUrl(clientId: string): string {
         Allowealth disconnects them. App passwords below are separate and stay active until you
         revoke them.
       </p>
+      <p class="mt-2 text-sm text-base-content/60">
+        You choose an app's permissions when you connect it. Connect again to change them. An app
+        with no permissions can connect but cannot read or change anything.
+      </p>
     </div>
 
     {apps.length === 0 ? (
@@ -54,6 +53,21 @@ function getAuthorizeUrl(clientId: string): string {
           <li class="flex items-center justify-between py-3 gap-4">
             <div class="min-w-0">
               <p class="font-medium text-sm truncate">{app.clientName}</p>
+              <ul
+                class="my-1 flex flex-wrap gap-1"
+                aria-label={`Permissions of ${app.clientName}`}
+                data-connected-app-permissions
+              >
+                {(app.permissionLabels.length > 0 ? app.permissionLabels : ['No permissions']).map(
+                  (label) => (
+                    <li
+                      class:list={['badge badge-sm badge-ghost h-auto', tokenClasses.badgePadding]}
+                    >
+                      {label}
+                    </li>
+                  )
+                )}
+              </ul>
               <p class="text-xs text-base-content/50">
                 Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
                 {app.accessTokenExpiresAt.toLocaleDateString()}

@@ -3,7 +3,8 @@ import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken } from '@/lib/mcp-app-password';
 import { MCP_OAUTH_CLIENTS, getMcpOAuthClientName } from '@/lib/mcp-oauth';
-import { PERMISSION_IDS, type Permission } from '@/lib/permissions/registry';
+import { oauthPermissionsFromScopes, parseStoredScopes } from '@/lib/mcp-oauth-scopes';
+import type { Permission } from '@/lib/permissions/registry';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { eq } from 'drizzle-orm';
@@ -15,7 +16,7 @@ export interface McpAuthContext {
   tokenId: string;
   /** The app password's name, or the OAuth client's display name. */
   tokenName: string;
-  /** What the token may do on REST and MCP. App passwords expand their stored grants. */
+  /** What the token may do on REST and MCP: expanded app password grants, or granted OAuth scopes. */
   permissions: readonly Permission[];
 }
 
@@ -44,17 +45,6 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
 
 const MCP_CLIENT_IDS: ReadonlySet<string> = new Set(MCP_OAUTH_CLIENTS.map((c) => c.clientId));
 
-// The Better Auth adapter stores `string[]` columns as JSON text on SQLite.
-function grantsMcpScope(scopes: unknown): boolean {
-  if (typeof scopes !== 'string') return false;
-  try {
-    const parsed: unknown = JSON.parse(scopes);
-    return Array.isArray(parsed) && parsed.includes('mcp');
-  } catch {
-    return false;
-  }
-}
-
 async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthContext | null> {
   const schema = deps.getSchema();
 
@@ -75,8 +65,9 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
   // Set by the provider on sign-out, session revocation, or a replayed code.
   if (tokenRecord.revoked) return null;
   if (!tokenRecord.expiresAt || new Date(tokenRecord.expiresAt) < new Date()) return null;
+  const scopes = parseStoredScopes(tokenRecord.scopes);
   // Rejects tokens minted for other scopes or for clients that are not the seeded MCP clients.
-  if (!grantsMcpScope(tokenRecord.scopes)) return null;
+  if (!scopes.includes('mcp')) return null;
   if (!MCP_CLIENT_IDS.has(tokenRecord.clientId)) return null;
 
   const userId = tokenRecord.userId;
@@ -95,8 +86,7 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
     userId,
     tokenId: tokenRecord.id,
     tokenName: getMcpOAuthClientName(tokenRecord.clientId),
-    // The `mcp` OAuth scope is all-or-nothing, so it grants every permission.
-    permissions: PERMISSION_IDS,
+    permissions: oauthPermissionsFromScopes(scopes),
   };
 }
 

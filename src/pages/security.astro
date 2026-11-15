@@ -23,7 +23,8 @@ import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
-import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
+import { getMcpOAuthClientName, getMcpOAuthRedirectUri, type ConnectedApp } from '@/lib/mcp-oauth';
+import { parseStoredScopes, permissionLabelsFromScopes } from '@/lib/mcp-oauth-scopes';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
@@ -41,13 +42,7 @@ const redirectUri = getMcpOAuthRedirectUri();
 const user = Astro.locals.user;
 const schema = getActiveSchema();
 
-let connectedApps: Array<{
-  tokenId: string;
-  clientName: string;
-  clientId: string;
-  createdAt: Date;
-  accessTokenExpiresAt: Date;
-}> = [];
+let connectedApps: ConnectedApp[] = [];
 
 if (user?.id) {
   const tokens = await db
@@ -56,6 +51,7 @@ if (user?.id) {
       clientId: schema.oauthAccessToken.clientId,
       createdAt: schema.oauthAccessToken.createdAt,
       expiresAt: schema.oauthAccessToken.expiresAt,
+      scopes: schema.oauthAccessToken.scopes,
     })
     .from(schema.oauthAccessToken)
     .where(
@@ -75,6 +71,7 @@ if (user?.id) {
             clientId: token.clientId,
             createdAt: token.createdAt,
             accessTokenExpiresAt: token.expiresAt,
+            permissionLabels: permissionLabelsFromScopes(parseStoredScopes(token.scopes)),
           },
         ]
       : []

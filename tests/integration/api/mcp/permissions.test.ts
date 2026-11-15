@@ -1,7 +1,16 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { mcpAppPasswords, users, workspaces } from '@/db/schema';
+import {
+  mcpAppPasswords,
+  oauthAccessToken,
+  oauthClient,
+  user as authUsers,
+  users,
+  workspaces,
+} from '@/db/schema';
+import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
+import { getSeededMcpOAuthClients } from '@/lib/mcp-oauth';
 import { expandPermissionGrants, type PermissionGrant } from '@/lib/permissions/registry';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
@@ -25,6 +34,32 @@ async function createTokenWithGrants(grants: readonly PermissionGrant[]): Promis
     expiry: '30',
   });
   return token;
+}
+
+const OAUTH_CLIENT_ID = 'mcp-claude-desktop';
+
+/** Inserts an access token row the way the OAuth provider stores it on SQLite. */
+async function createOAuthTokenWithScopes(scopes: string[]): Promise<string> {
+  const seeded = getSeededMcpOAuthClients().find((c) => c.clientId === OAUTH_CLIENT_ID)!;
+  await db
+    .insert(oauthClient)
+    .values({
+      id: `client-${OAUTH_CLIENT_ID}`,
+      clientId: seeded.clientId,
+      name: seeded.name,
+      redirectUris: JSON.stringify(seeded.redirectUris),
+    })
+    .onConflictDoNothing();
+  const rawToken = `oauth-${crypto.randomUUID()}`;
+  await db.insert(oauthAccessToken).values({
+    id: `at-${crypto.randomUUID()}`,
+    token: await hashOAuthToken(rawToken),
+    clientId: OAUTH_CLIENT_ID,
+    userId: USER_ID,
+    expiresAt: new Date(Date.now() + 3_600_000),
+    scopes: JSON.stringify(scopes),
+  });
+  return rawToken;
 }
 
 async function rpc(token: string, method: string, params?: Record<string, unknown>) {
@@ -54,11 +89,13 @@ async function callTool(
 
 async function resetFixtures(): Promise<void> {
   await db.delete(mcpAppPasswords).where(eq(mcpAppPasswords.user_id, USER_ID));
+  await db.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, USER_ID));
+  await db.delete(authUsers).where(eq(authUsers.id, USER_ID));
   await db.delete(users).where(eq(users.id, USER_ID));
   await db.delete(workspaces).where(eq(workspaces.id, WORKSPACE_ID));
 }
 
-describe('MCP tool access by app password permissions', () => {
+describe('MCP tool access by token permissions', () => {
   beforeAll(async () => {
     ({ POST: post } = await import('@/pages/api/mcp'));
   });
@@ -76,6 +113,9 @@ describe('MCP tool access by app password permissions', () => {
       name: 'MCP Owner',
       role: 'admin',
     });
+    await db
+      .insert(authUsers)
+      .values({ id: USER_ID, name: 'MCP Owner', email: 'mcp-permissions@example.com' });
   });
 
   afterAll(resetFixtures);
@@ -189,6 +229,37 @@ describe('MCP tool access by app password permissions', () => {
     expect(info).toMatchObject({
       preset: 'custom',
       permissions: ['transactions:create', 'budgets:read'],
+    });
+  });
+
+  test('an OAuth token sees and calls only the tools its permission scopes cover', async () => {
+    const token = await createOAuthTokenWithScopes([
+      'openid',
+      'mcp',
+      'allowealth:transactions:create',
+    ]);
+
+    expect(await listToolNames(token)).toEqual(['add_expense', 'add_income', 'get_token_info']);
+    expect(await callTool(token, 'list_transactions')).toEqual({
+      isError: true,
+      content: [
+        { type: 'text', text: 'Tool list_transactions needs the transactions:read permission.' },
+      ],
+    });
+    expect(JSON.parse((await callTool(token, 'get_token_info')).content[0].text)).toEqual({
+      kind: 'oauth',
+      permissions: ['transactions:create'],
+    });
+  });
+
+  test('an OAuth token with only openid and mcp sees and calls only get_token_info', async () => {
+    const token = await createOAuthTokenWithScopes(['openid', 'mcp']);
+
+    expect(await listToolNames(token)).toEqual(['get_token_info']);
+    expect((await callTool(token, 'list_accounts')).isError).toBe(true);
+    expect(JSON.parse((await callTool(token, 'get_token_info')).content[0].text)).toEqual({
+      kind: 'oauth',
+      permissions: [],
     });
   });
 });
