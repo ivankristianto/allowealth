@@ -28,12 +28,20 @@ describe('REST allowlist permissions', () => {
   });
 });
 
-describe('OpenAPI app password permissions', () => {
-  test('the documented permission enum matches the registry', () => {
-    const schemas = Bun.YAML.parse(
-      readFileSync(join(process.cwd(), 'openapi/schemas/AppPassword.yml'), 'utf8')
-    ) as { AppPasswordPermission: { enum: string[] } };
+describe('documented app password permissions', () => {
+  const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
+
+  test('the OpenAPI permission enum matches the registry', () => {
+    const schemas = Bun.YAML.parse(read('openapi/schemas/AppPassword.yml')) as {
+      AppPasswordPermission: { enum: string[] };
+    };
     expect(schemas.AppPasswordPermission.enum).toEqual([...PERMISSION_IDS]);
+  });
+
+  test('the REST agent guide lists every permission', () => {
+    const guide = read('apps/docs/src/content/docs/reference/ai-agent-rest.md');
+    const missing = PERMISSION_IDS.filter((permission) => !guide.includes(`| \`${permission}\``));
+    expect(missing).toEqual([]);
   });
 });
 

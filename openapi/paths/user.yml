@@ -258,7 +258,7 @@ paths:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '429':
-          description: Too many app passwords created recently
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -269,7 +269,8 @@ paths:
       description: |
         Return one of the authenticated user's app passwords. With `?_render=html`,
         returns the server-rendered edit form instead, or a sign-in-again notice
-        when the session is older than 15 minutes.
+        when the session is older than 15 minutes. HTML requests need the header
+        `X-Requested-With: XMLHttpRequest`; without it the request gets 403.
       security:
         - sessionAuth: []
       parameters:
@@ -288,13 +289,23 @@ paths:
           description: Return the server-rendered edit form instead of JSON
       responses:
         '200':
-          description: The app password
+          description: The app password, or its edit form with `_render=html`
           content:
             application/json:
               schema:
                 $ref: '../schemas/AppPassword.yml#/AppPasswordResponse'
+            text/html:
+              schema:
+                type: string
+                description: |
+                  Server-rendered edit form for the token, or the sign-in-again notice
+                  when the session is older than 15 minutes.
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           description: No app password with this id belongs to the user (`NOT_FOUND`)
           content:
@@ -359,7 +370,7 @@ paths:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '429':
-          description: Too many app password edits recently
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
