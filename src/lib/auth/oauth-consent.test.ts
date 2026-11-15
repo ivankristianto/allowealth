@@ -111,16 +111,19 @@ describe('submitOAuthConsent', () => {
     });
   });
 
-  it('refuses a consent with every permission unticked before reaching Better Auth', async () => {
-    const handler = mock(async () => Response.json({ url: '/x' }));
+  it('sends only the required scopes when every permission is unticked', async () => {
+    let body: unknown;
+    const handler = mock(async (request: Request) => {
+      body = await request.json();
+      return Response.json({ redirect: true, url: '/oauth/display-token?code=abc' });
+    });
 
-    const result = await submitOAuthConsent(
+    await submitOAuthConsent(
       consentRequest(APP_ORIGIN, { accept: 'true', oauth_query: SCOPED_QUERY }),
       { handler, trustedOrigins }
     );
 
-    expect(result).toEqual({ error: 'Choose at least one permission, or deny access.' });
-    expect(handler).not.toHaveBeenCalled();
+    expect(body).toEqual({ accept: true, oauth_query: SCOPED_QUERY, scope: 'openid mcp' });
   });
 
   it('sends accept=false for the Deny button', async () => {

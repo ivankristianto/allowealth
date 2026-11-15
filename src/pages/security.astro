@@ -24,11 +24,7 @@ import { auth } from '@/lib/auth/server';
 import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
-import {
-  describeOAuthAccess,
-  parseStoredScopes,
-  type OAuthAccessDescription,
-} from '@/lib/mcp-oauth-scopes';
+import { describeOAuthPermissions, parseStoredScopes } from '@/lib/mcp-oauth-scopes';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
@@ -52,7 +48,7 @@ let connectedApps: Array<{
   clientId: string;
   createdAt: Date;
   accessTokenExpiresAt: Date;
-  access: OAuthAccessDescription;
+  permissionLabels: string[];
 }> = [];
 
 if (user?.id) {
@@ -82,7 +78,7 @@ if (user?.id) {
             clientId: token.clientId,
             createdAt: token.createdAt,
             accessTokenExpiresAt: token.expiresAt,
-            access: describeOAuthAccess(parseStoredScopes(token.scopes)),
+            permissionLabels: describeOAuthPermissions(parseStoredScopes(token.scopes)),
           },
         ]
       : []

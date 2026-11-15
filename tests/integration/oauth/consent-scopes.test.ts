@@ -5,7 +5,7 @@ import { oauthProvider } from '@better-auth/oauth-provider';
 import { getOAuthProviderOptions } from '@/lib/auth/oauth-provider-options';
 import { submitOAuthConsent } from '@/lib/auth/oauth-consent';
 import { getSeededMcpOAuthClients } from '@/lib/mcp-oauth';
-import { PERMISSION_OAUTH_SCOPES } from '@/lib/mcp-oauth-scopes';
+import { PERMISSION_OAUTH_SCOPES, oauthPermissionsFromScopes } from '@/lib/mcp-oauth-scopes';
 
 const BASE_URL = 'http://localhost:4321';
 const CLIENT_ID = 'mcp-claude-desktop';
@@ -106,8 +106,33 @@ async function exchangeCode(code: string, verifier: string) {
     })
   );
   expect(response.status).toBe(200);
-  return (await response.json()) as { access_token: string; scope: string };
+  return (await response.json()) as TokenResponse;
 }
+
+interface TokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  scope: string;
+}
+
+async function refresh(refreshToken: string, scope: string) {
+  return auth.handler(
+    new Request(`${BASE_URL}/api/auth/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: CLIENT_ID,
+        scope,
+      }),
+    })
+  );
+}
+
+/** What `validateMcpToken` would grant for the token's scopes. */
+const permissionsOf = (token: { scope: string }) =>
+  oauthPermissionsFromScopes(token.scope.split(' '));
 
 /** Runs authorize, consent with the ticked scopes, and the code exchange. */
 async function connect(scope: string, ticked: string[]) {
@@ -144,6 +169,46 @@ describe('OAuth consent with permission scopes', () => {
 
     expect(token.scope).toBe('openid mcp allowealth:transactions:read');
     expect(storedScopes()).toEqual([['openid', 'mcp', 'allowealth:transactions:read']]);
+  });
+
+  it('issues a token with no permissions when every permission is unticked', async () => {
+    const token = await connect(`openid mcp ${ALL_PERMISSION_SCOPES.join(' ')}`, []);
+
+    expect(token.scope).toBe('openid mcp');
+    expect(permissionsOf(token)).toEqual([]);
+  });
+
+  it('gives no permissions to an mcp-only request that skips a narrowed consent', async () => {
+    await connect(`openid mcp ${ALL_PERMISSION_SCOPES.join(' ')}`, [
+      'allowealth:transactions:read',
+    ]);
+
+    const { verifier, challenge } = await pkcePair();
+    const next = await authorize('openid mcp', challenge);
+    const code = next.searchParams.get('code');
+    expect(code).toBeString();
+
+    const token = await exchangeCode(code!, verifier);
+    expect(token.scope).toBe('openid mcp');
+    expect(permissionsOf(token)).toEqual([]);
+  });
+
+  it('lets a refresh narrow the permissions but never widen them', async () => {
+    memory.oauthClient[0].grantTypes = ['authorization_code', 'refresh_token'];
+    const token = await connect(`openid mcp offline_access ${ALL_PERMISSION_SCOPES.join(' ')}`, [
+      'allowealth:transactions:read',
+    ]);
+    expect(token.refresh_token).toBeString();
+
+    const widened = await refresh(
+      token.refresh_token!,
+      'openid mcp offline_access allowealth:transactions:read allowealth:transactions:create'
+    );
+    expect(widened.status).toBe(400);
+
+    const narrowed = await refresh(token.refresh_token!, 'openid mcp');
+    expect(narrowed.status).toBe(200);
+    expect(permissionsOf((await narrowed.json()) as TokenResponse)).toEqual([]);
   });
 
   it('drops a ticked scope that was not in the signed request', async () => {

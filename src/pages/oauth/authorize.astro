@@ -38,6 +38,9 @@ const requestedScopes = isValidRequest
   : [];
 const scopeChoices = getConsentScopeChoices(requestedScopes);
 const isTicked = (scope: string) => postedScopes?.has(scope) ?? true;
+const anyPermissionTicked = scopeChoices.groups.some((group) =>
+  group.permissions.some((permission) => isTicked(permission.scope))
+);
 
 // Look up the client display name
 let clientName = clientId;
@@ -69,7 +72,7 @@ if (clientId) {
               )}
             </div>
 
-            <form method="post" class="space-y-5">
+            <form method="post" class="space-y-5" data-oauth-consent-form>
               <input type="hidden" name="oauth_query" value={oauthQuery} />
 
               {scopeChoices.required.length > 0 && (
@@ -94,15 +97,6 @@ if (clientId) {
                     </label>
                   ))}
                 </fieldset>
-              )}
-
-              {scopeChoices.fullAccess && (
-                <div class="alert alert-warning text-sm" role="note" data-oauth-full-access>
-                  <span>
-                    {clientName} did not ask for specific permissions, so approving gives it full
-                    access to every Allowealth tool.
-                  </span>
-                </div>
               )}
 
               {scopeChoices.groups.length > 0 && (
@@ -142,6 +136,17 @@ if (clientId) {
                   ))}
                 </fieldset>
               )}
+
+              <div
+                class="alert alert-warning text-sm"
+                role="status"
+                hidden={anyPermissionTicked}
+                data-oauth-no-permissions
+              >
+                <span>
+                  With no permissions, {clientName} can connect but cannot read or change anything.
+                </span>
+              </div>
 
               {consentError && (
                 <div class="alert alert-error" role="alert">
@@ -187,3 +192,14 @@ if (clientId) {
     </div>
   </div>
 </ProtectedLayout>
+
+<script>
+  import { syncNoPermissionsWarning } from '@/lib/oauth-consent-form.client';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
+
+  onPageReady((signal) => {
+    document.querySelectorAll<HTMLFormElement>('[data-oauth-consent-form]').forEach((form) => {
+      form.addEventListener('change', () => syncNoPermissionsWarning(form), { signal });
+    });
+  });
+</script>

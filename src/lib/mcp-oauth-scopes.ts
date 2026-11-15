@@ -34,30 +34,19 @@ export function parseStoredScopes(value: unknown): string[] {
   }
 }
 
-/**
- * Any `allowealth:` scope limits the token to those permissions; unknown ones grant nothing.
- * Without one (older tokens, or a client that asked only for `mcp`) the token keeps full access.
- */
-export function oauthPermissionsFromScopes(scopes: readonly string[]): readonly Permission[] {
-  if (!scopes.some(isPermissionScope)) return PERMISSION_IDS;
+/** A token holds exactly its `allowealth:` scopes, in registry order; unknown ones grant nothing. */
+export function oauthPermissionsFromScopes(scopes: readonly string[]): Permission[] {
   const granted = new Set(scopes);
   return PERMISSION_IDS.filter((permission) => granted.has(toPermissionScope(permission)));
 }
 
-export type OAuthAccessDescription =
-  { kind: 'full' } | { kind: 'limited'; permissionLabels: string[] };
-
-/** What the connected apps list shows for a token's granted scopes. */
-export function describeOAuthAccess(scopes: readonly string[]): OAuthAccessDescription {
-  if (!scopes.some(isPermissionScope)) return { kind: 'full' };
+/** The labels the connected apps list shows for a token's granted scopes. */
+export function describeOAuthPermissions(scopes: readonly string[]): string[] {
   const granted = new Set<string>(oauthPermissionsFromScopes(scopes));
-  const permissionLabels = PERMISSIONS.filter((permission) => granted.has(permission.id)).map(
+  const labels = PERMISSIONS.filter((permission) => granted.has(permission.id)).map(
     (permission) => permission.label
   );
-  return {
-    kind: 'limited',
-    permissionLabels: permissionLabels.length > 0 ? permissionLabels : ['No permissions'],
-  };
+  return labels.length > 0 ? labels : ['No permissions'];
 }
 
 interface ScopeChoice {
@@ -73,7 +62,7 @@ const REQUIRED_SCOPE_TEXT: Readonly<Record<string, Omit<ScopeChoice, 'scope'>>> 
   },
   mcp: {
     label: 'Connect through MCP',
-    description: 'Lets the app call Allowealth tools. The permissions below decide which ones.',
+    description: 'Lets the app call the Allowealth tools its permissions allow.',
   },
   profile: { label: 'See your name', description: 'Your name and profile picture.' },
   email: { label: 'See your email address', description: 'The email you sign in with.' },
@@ -88,8 +77,6 @@ export interface ConsentScopeChoices {
   required: ScopeChoice[];
   /** Requested permission scopes, grouped as the app password picker groups them. */
   groups: Array<{ label: string; permissions: ScopeChoice[] }>;
-  /** The client asked for `mcp` without naming permissions, which grants every permission. */
-  fullAccess: boolean;
 }
 
 export function getConsentScopeChoices(requested: readonly string[]): ConsentScopeChoices {
@@ -113,27 +100,14 @@ export function getConsentScopeChoices(requested: readonly string[]): ConsentSco
       })),
   })).filter((group) => group.permissions.length > 0);
 
-  return {
-    required,
-    groups,
-    fullAccess: requestedSet.has('mcp') && !requested.some(isPermissionScope),
-  };
+  return { required, groups };
 }
 
-export type ConsentScopeResolution = { scopes: string[] } | { error: string };
-
-/**
- * Grants every requested non-permission scope plus the ticked permission scopes that were requested.
- * Unticking every permission would leave a full-access `mcp` token, so that is refused.
- */
+/** Grants every requested non-permission scope plus the ticked permission scopes that were requested. */
 export function resolveConsentScopes(
   requested: readonly string[],
   ticked: readonly string[]
-): ConsentScopeResolution {
+): string[] {
   const tickedSet = new Set(ticked);
-  const scopes = requested.filter((scope) => !isPermissionScope(scope) || tickedSet.has(scope));
-  if (requested.some(isPermissionScope) && !scopes.some(isPermissionScope)) {
-    return { error: 'Choose at least one permission, or deny access.' };
-  }
-  return { scopes };
+  return requested.filter((scope) => !isPermissionScope(scope) || tickedSet.has(scope));
 }

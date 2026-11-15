@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { PERMISSION_IDS } from '@/lib/permissions/registry';
 import {
   PERMISSION_OAUTH_SCOPES,
-  describeOAuthAccess,
+  describeOAuthPermissions,
   getConsentScopeChoices,
   oauthPermissionsFromScopes,
   parseStoredScopes,
@@ -29,8 +29,14 @@ describe('parseStoredScopes', () => {
 });
 
 describe('oauthPermissionsFromScopes', () => {
-  test('gives every permission when no allowealth: scope was granted', () => {
-    expect(oauthPermissionsFromScopes(['openid', 'mcp'])).toEqual(PERMISSION_IDS);
+  test('gives no permissions when no allowealth: scope was granted', () => {
+    expect(oauthPermissionsFromScopes(['openid', 'mcp'])).toEqual([]);
+  });
+
+  test('gives every permission only when every allowealth: scope was granted', () => {
+    expect(oauthPermissionsFromScopes(['openid', 'mcp', ...PERMISSION_OAUTH_SCOPES])).toEqual(
+      PERMISSION_IDS
+    );
   });
 
   test('gives exactly the granted permissions, in registry order', () => {
@@ -55,22 +61,18 @@ describe('oauthPermissionsFromScopes', () => {
   });
 });
 
-describe('describeOAuthAccess', () => {
-  test('reports full access for a token without allowealth: scopes', () => {
-    expect(describeOAuthAccess(['openid', 'mcp'])).toEqual({ kind: 'full' });
-  });
-
+describe('describeOAuthPermissions', () => {
   test('lists the labels of the granted permissions', () => {
     expect(
-      describeOAuthAccess(['mcp', 'allowealth:accounts:read', 'allowealth:transactions:read'])
-    ).toEqual({ kind: 'limited', permissionLabels: ['Read transactions', 'Read accounts'] });
+      describeOAuthPermissions(['mcp', 'allowealth:accounts:read', 'allowealth:transactions:read'])
+    ).toEqual(['Read transactions', 'Read accounts']);
   });
 
-  test('says so when the granted scopes map to no current permission', () => {
-    expect(describeOAuthAccess(['mcp', 'allowealth:transactions:launch'])).toEqual({
-      kind: 'limited',
-      permissionLabels: ['No permissions'],
-    });
+  test('says No permissions for a token without current permission scopes', () => {
+    expect(describeOAuthPermissions(['openid', 'mcp'])).toEqual(['No permissions']);
+    expect(describeOAuthPermissions(['mcp', 'allowealth:transactions:launch'])).toEqual([
+      'No permissions',
+    ]);
   });
 });
 
@@ -85,7 +87,6 @@ describe('getConsentScopeChoices', () => {
     ]);
 
     expect(choices.required.map((choice) => choice.scope)).toEqual(['openid', 'mcp']);
-    expect(choices.fullAccess).toBe(false);
     expect(
       choices.groups.map((group) => ({
         label: group.label,
@@ -104,11 +105,8 @@ describe('getConsentScopeChoices', () => {
     });
   });
 
-  test('marks an mcp request without permission scopes as full access', () => {
-    const choices = getConsentScopeChoices(['openid', 'mcp']);
-
-    expect(choices.fullAccess).toBe(true);
-    expect(choices.groups).toEqual([]);
+  test('offers no permission groups for a request without permission scopes', () => {
+    expect(getConsentScopeChoices(['openid', 'mcp']).groups).toEqual([]);
   });
 
   test('keeps other requested scopes visible as required', () => {
@@ -132,30 +130,32 @@ describe('resolveConsentScopes', () => {
   ];
 
   test('re-adds the required scopes to the ticked permissions, in request order', () => {
-    expect(resolveConsentScopes(requested, ['allowealth:transactions:create'])).toEqual({
-      scopes: ['openid', 'mcp', 'allowealth:transactions:create'],
-    });
+    expect(resolveConsentScopes(requested, ['allowealth:transactions:create'])).toEqual([
+      'openid',
+      'mcp',
+      'allowealth:transactions:create',
+    ]);
   });
 
   test('ignores a required scope sent as a ticked box', () => {
-    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:transactions:read'])).toEqual({
-      scopes: ['openid', 'mcp', 'allowealth:transactions:read'],
-    });
+    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:transactions:read'])).toEqual([
+      'openid',
+      'mcp',
+      'allowealth:transactions:read',
+    ]);
   });
 
   test('drops ticked scopes that were not in the signed request', () => {
     expect(
       resolveConsentScopes(requested, ['allowealth:transactions:read', 'allowealth:reports:read'])
-    ).toEqual({ scopes: ['openid', 'mcp', 'allowealth:transactions:read'] });
+    ).toEqual(['openid', 'mcp', 'allowealth:transactions:read']);
   });
 
-  test('refuses a consent that unticks every requested permission', () => {
-    const refusal = { error: 'Choose at least one permission, or deny access.' };
-    expect(resolveConsentScopes(requested, [])).toEqual(refusal);
-    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:reports:read'])).toEqual(refusal);
-  });
-
-  test('passes an mcp-only request through unchanged', () => {
-    expect(resolveConsentScopes(['openid', 'mcp'], [])).toEqual({ scopes: ['openid', 'mcp'] });
+  test('keeps only the required scopes when every permission is unticked', () => {
+    expect(resolveConsentScopes(requested, [])).toEqual(['openid', 'mcp']);
+    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:reports:read'])).toEqual([
+      'openid',
+      'mcp',
+    ]);
   });
 });

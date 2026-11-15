@@ -87,7 +87,7 @@ async function createOAuthToken(): Promise<string> {
     clientId: OAUTH_CLIENT_ID,
     userId: USER_ID,
     expiresAt: new Date(Date.now() + 3_600_000),
-    scopes: JSON.stringify(['openid', 'mcp']),
+    scopes: JSON.stringify(['openid', 'mcp', 'allowealth:transactions:create']),
   });
   return rawToken;
 }

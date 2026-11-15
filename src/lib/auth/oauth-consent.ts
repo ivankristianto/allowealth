@@ -56,10 +56,7 @@ export async function submitOAuthConsent(
   // Scopes come from the signed request, never the form, so ticked boxes can only narrow them.
   const requested = new URLSearchParams(oauthQuery).get('scope')?.split(' ').filter(Boolean) ?? [];
   if (accept && requested.length > 0) {
-    const ticked = form.getAll('scope').map(String);
-    const resolution = resolveConsentScopes(requested, ticked);
-    if ('error' in resolution) return resolution;
-    consent.scope = resolution.scopes.join(' ');
+    consent.scope = resolveConsentScopes(requested, form.getAll('scope').map(String)).join(' ');
   }
 
   // Through the auth handler (not `auth.api`, whose type omits plugin

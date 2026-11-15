@@ -11,11 +11,7 @@ import {
 } from '@/db/schema';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getSeededMcpOAuthClients } from '@/lib/mcp-oauth';
-import {
-  PERMISSION_IDS,
-  expandPermissionGrants,
-  type PermissionGrant,
-} from '@/lib/permissions/registry';
+import { expandPermissionGrants, type PermissionGrant } from '@/lib/permissions/registry';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 
@@ -256,13 +252,14 @@ describe('MCP tool access by token permissions', () => {
     });
   });
 
-  test('an OAuth token with only the mcp scope keeps every permission', async () => {
+  test('an OAuth token with only openid and mcp sees and calls only get_token_info', async () => {
     const token = await createOAuthTokenWithScopes(['openid', 'mcp']);
 
-    expect(await listToolNames(token)).toContain('list_transactions');
+    expect(await listToolNames(token)).toEqual(['get_token_info']);
+    expect((await callTool(token, 'list_accounts')).isError).toBe(true);
     expect(JSON.parse((await callTool(token, 'get_token_info')).content[0].text)).toEqual({
       kind: 'oauth',
-      permissions: PERMISSION_IDS,
+      permissions: [],
     });
   });
 });

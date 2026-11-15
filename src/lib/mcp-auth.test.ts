@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SQL } from 'drizzle-orm';
 import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { oauthAccessToken, users } from '@/db/schema/sqlite';
-import { PERMISSION_IDS } from '@/lib/permissions/registry';
 
 const mockFindFirst = mock(async () => null);
 const mockDb = {
@@ -27,7 +26,10 @@ const testDeps = {
   cache: { invalidateByTags: mockCacheInvalidate },
 };
 
-const MCP_GRANT = { clientId: 'mcp-claude-desktop', scopes: JSON.stringify(['openid', 'mcp']) };
+const MCP_GRANT = {
+  clientId: 'mcp-claude-desktop',
+  scopes: JSON.stringify(['openid', 'mcp', 'allowealth:accounts:read']),
+};
 
 function liveToken(overrides: Record<string, unknown> = {}) {
   return {
@@ -179,7 +181,7 @@ describe('validateMcpToken', () => {
         userId: 'user-1',
         tokenId: 'tok-1',
         tokenName: name,
-        permissions: PERMISSION_IDS,
+        permissions: ['accounts:read'],
         kind: 'oauth',
       });
     }
@@ -201,6 +203,17 @@ describe('validateMcpToken', () => {
     const result = await validateMcpToken('scoped-token', testDeps);
 
     expect(result?.permissions).toEqual(['transactions:create', 'budgets:read']);
+  });
+
+  it('gives a token with only openid and mcp no permissions', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ scopes: JSON.stringify(['openid', 'mcp']) })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    const result = await validateMcpToken('mcp-only-token', testDeps);
+
+    expect(result).toMatchObject({ kind: 'oauth', tokenId: 'tok-1', permissions: [] });
   });
 
   it('grants nothing when the only allowealth: scope left the registry', async () => {
@@ -243,7 +256,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
-      permissions: PERMISSION_IDS,
+      permissions: ['accounts:read'],
       kind: 'oauth',
     });
     expect(mockCacheSet).not.toHaveBeenCalled();
@@ -269,7 +282,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
-      permissions: PERMISSION_IDS,
+      permissions: ['accounts:read'],
       kind: 'oauth',
     });
     expect(mockCacheSet).not.toHaveBeenCalled();
@@ -374,7 +387,7 @@ describe('validateMcpToken app password dispatch', () => {
     expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
   });
 
-  it('sends other tokens to the OAuth lookup, where an mcp-only token keeps every permission', async () => {
+  it('sends other tokens to the OAuth lookup', async () => {
     const verify = mock(async () => appPasswordContext);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
@@ -393,7 +406,7 @@ describe('validateMcpToken app password dispatch', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
-      permissions: PERMISSION_IDS,
+      permissions: ['accounts:read'],
       kind: 'oauth',
     });
   });
