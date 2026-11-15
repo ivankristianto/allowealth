@@ -7,6 +7,7 @@ paths:
       description: |
         Retrieve the current workspace settings including name and preferences.
         All authenticated users can view workspace settings.
+      x-required-permission: settings:read
       security:
         - sessionAuth: []
         - bearerAuth: []

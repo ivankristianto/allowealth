@@ -9,6 +9,7 @@ paths:
         creation time). Soft-deleted transactions are excluded. When both `start_date` and
         `end_date` are sent, `data.summary` adds income and expense totals for that range.
         Invalid `type` values are ignored; `limit` and `offset` are clamped, not rejected.
+      x-required-permission: transactions:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -123,6 +124,7 @@ paths:
         currency that differs from the account's returns 400 (`CATEGORY_INACTIVE`,
         `ACCOUNT_CLOSED`, `VALIDATION_ERROR`). `transaction_date` may not be later than today in
         the workspace timezone.
+      x-required-permission: transactions:create
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -181,6 +183,7 @@ paths:
       description: >-
         One transaction by ID. Soft-deleted transactions return 404. `has_history`,
         `is_recurring` and `created_by_user_name` are not computed here (see Transaction).
+      x-required-permission: transactions:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -211,6 +214,7 @@ paths:
       description: >-
         Partial update: send only the fields to change. Requires `Content-Type: application/json`
         (415 otherwise). Writes an audit history entry.
+      x-required-permission: transactions:update
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -247,6 +251,7 @@ paths:
       tags: [Transactions]
       summary: Delete a transaction
       description: Soft delete. The row is kept with `deleted_at` set and no longer appears in lists or lookups.
+      x-required-permission: transactions:delete
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -291,6 +296,7 @@ paths:
         Create, update and delete audit events for a transaction, oldest first. By default only
         the latest 5 updates are included; `all=true` returns every update. An unknown ID returns
         an empty history, not 404.
+      x-required-permission: transactions:read
       security:
         - sessionAuth: []
         - bearerAuth: []

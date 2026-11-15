@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
+import { bundleOpenApiDocument } from '@/lib/openapi/bundle';
 import { PERMISSION_IDS, expandPermissionGrants, isPermission } from '@/lib/permissions/registry';
 import { TOOL_PERMISSIONS, registerTools, toolAnnotations } from '@mcp-server/tools/index';
 
@@ -36,6 +37,24 @@ describe('documented app password permissions', () => {
       AppPasswordPermission: { enum: string[] };
     };
     expect(schemas.AppPasswordPermission.enum).toEqual([...PERMISSION_IDS]);
+  });
+
+  test('x-required-permission on each operation matches the REST allowlist, in both directions', () => {
+    const document = bundleOpenApiDocument(read) as {
+      paths: Record<string, Record<string, { 'x-required-permission'?: string }>>;
+    };
+    const documented = Object.entries(document.paths).flatMap(([path, item]) =>
+      Object.entries(item)
+        .filter(([, operation]) => operation['x-required-permission'] !== undefined)
+        .map(([method, operation]) => {
+          return `${method.toUpperCase()} ${path} ${operation['x-required-permission']}`;
+        })
+    );
+    const allowlisted = restPairs.map(({ rule, method, permission }) => {
+      return `${method} ${rule.path} ${permission === ANY_VALID_TOKEN ? 'any' : permission}`;
+    });
+
+    expect(documented.sort()).toEqual(allowlisted.sort());
   });
 
   test('the REST agent guide lists every permission', () => {

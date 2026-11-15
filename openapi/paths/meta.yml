@@ -8,6 +8,7 @@ paths:
         Returns this specification bundled into a single OpenAPI 3.1 JSON document (all `$ref`s
         local). Any authenticated caller may read it: a session cookie or an app password of
         either scope. Responses may be cached privately for 5 minutes.
+      x-required-permission: any
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -54,6 +55,7 @@ paths:
         expiry and rate limit. Any valid app password may call it, so an agent can check what it
         may do before it tries. A request with a session cookie and no app password gets 400
         `APP_PASSWORD_REQUIRED`.
+      x-required-permission: any
       security:
         - bearerAuth: []
       responses:

@@ -13,9 +13,10 @@ info:
     **App passwords:**
     Scripts and AI agents can call a fixed set of REST operations with an app password sent as
     `Authorization: Bearer aw_pat_...` (see the `bearerAuth` security scheme). Operations that
-    accept one list `bearerAuth` in their `security`; every other operation returns 403 for app
-    passwords. A `read` app password may only use GET; a `read-write` one may also create,
-    update and delete where the operation allows it. Start with `GET /api/openapi.json` to fetch this document.
+    accept one list `bearerAuth` in their `security` and name the permission they need in
+    `x-required-permission`; every other operation returns 403 for app passwords. Start with
+    `GET /api/openapi.json` to fetch this document and `GET /api/app-password/self` to see what
+    the token may do.
 
     Common public auth endpoints used by the app:
     - `POST /api/auth/sign-up/email`
@@ -263,7 +264,8 @@ components:
         - Permissions: each allowed route and method needs one `resource:action` permission, such
           as `transactions:read` or `transactions:create`. HEAD needs the same permission as GET.
           A `read` token holds every `:read` permission; a `read-write` token holds them all.
-          `GET /api/openapi.json` needs no permission.
+          Each operation names its permission in `x-required-permission`, or `any` for
+          `GET /api/openapi.json` and `GET /api/app-password/self`, which need none.
         - Deny by default: only operations that list `bearerAuth` in their `security` accept app
           passwords. Any other route or method returns 403 `APP_PASSWORD_ROUTE_NOT_ALLOWED`. A
           token without the needed permission returns 403 `APP_PASSWORD_PERMISSION_MISSING`

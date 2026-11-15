@@ -8,6 +8,7 @@ paths:
         Account categories in the caller's workspace as a bare array in `data`, with no
         pagination. System categories come first, then by `sortOrder`, then by name. Bad filter
         values are not rejected.
+      x-required-permission: categories:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -95,6 +96,7 @@ paths:
       description: >-
         Retrieve a single account category in the caller's workspace, with its active account
         count. An ID from another workspace returns 404 with message `Category not found`.
+      x-required-permission: categories:read
       security:
         - sessionAuth: []
         - bearerAuth: []
