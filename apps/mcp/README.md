@@ -185,7 +185,7 @@ The AI will call the appropriate tools automatically. Category and asset names a
 - OAuth 2.1 is provided by `@better-auth/oauth-provider` (Better Auth 1.7)
 - Clients, tokens and consents are stored in `oauthClient`, `oauthAccessToken`, `oauthRefreshToken` and `oauthConsent`; token values are stored hashed
 - Signing out of Allowealth revokes the OAuth tokens issued under that browser session
-- Each registry permission is an OAuth scope, `allowealth:<permission>` (for example `allowealth:transactions:create`), listed in `scopes_supported` at `/api/auth/.well-known/oauth-authorization-server`. A client requests the ones it needs alongside `openid mcp`; the user can untick any of them on the consent screen. A token holds exactly its `allowealth:*` scopes: with none it can connect and call `get_token_info`, nothing else
+- Each registry permission is an OAuth scope, `allowealth:<permission>` (for example `allowealth:transactions:create`), listed in `scopes_supported` at `/api/auth/.well-known/oauth-authorization-server`. A client requests the ones it needs alongside `openid mcp`; the user can untick any of them on the consent screen. A token holds exactly its `allowealth:*` scopes: with none it can connect and call `get_token_info`, nothing else. Approving a client again revokes its earlier tokens
 - App passwords live in `mcp_app_passwords`, stored as a SHA-256 hash with a non-secret `aw_pat_xxxx` hint. The `aw_pat_` prefix lets secret scanners spot leaked tokens
 - Both token types are shown once
 - Every HTTP request and every stdio tool call re-checks the token against the database, so revocation, expiry and account deletion take effect on the next call
