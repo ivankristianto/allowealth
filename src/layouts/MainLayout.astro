@@ -142,6 +142,16 @@ const demoMode = isDemoMode();
       return document.querySelector('.drawer-content');
     }
 
+    function findHashTarget(): HTMLElement | null {
+      if (!window.location.hash) return null;
+      try {
+        return document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+      } catch {
+        // A malformed escape such as #%E0 names no element.
+        return null;
+      }
+    }
+
     if (!scopedWindow[SCROLL_INIT_KEY]) {
       scopedWindow[SCROLL_INIT_KEY] = true;
       scopedWindow.__vtPendingScroll = null;
@@ -244,10 +254,8 @@ const demoMode = isDemoMode();
           // Stop watching after 2s — any content loads should be done by then
           window.setTimeout(stopWatching, 2000);
         } else {
-          const hashTarget = window.location.hash
-            ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
-            : null;
-          // A link such as /security#recent-activity should land on its target, not the top.
+          // Resetting to the top would undo the browser's scroll to a #fragment target.
+          const hashTarget = findHashTarget();
           if (hashTarget) hashTarget.scrollIntoView();
           else container.scrollTop = 0;
         }
